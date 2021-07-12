@@ -125,22 +125,10 @@ fi
 echo "------------------------------------"
 echo "Perform OAuth 2.0 flow..."
 echo "------------------------------------"
-# Create JWT bearer token
+# Request access token
 VP=$(cat ./node-B/data/vp.txt)
 REQUEST="{\"custodian\":\"${VENDOR_A_DID}\",\"actor\":\"${VENDOR_B_DID}\",\"identity\":\"${VP}\",\"service\":\"test\"}"
-RESPONSE=$(echo $REQUEST | curl -X POST -s --data-binary @- http://localhost:21323/internal/auth/v1/bearertoken -H "Content-Type:application/json")
-echo $RESPONSE
-if echo $RESPONSE | grep -q "bearer_token"; then
-  echo $RESPONSE | sed -E 's/.*"bearer_token":"([^"]*).*/\1/' > ./node-B/data/bearertoken.txt
-  echo "bearer token stored in ./node-B/data/bearertoken.txt"
-else
-  echo "FAILED: Could not get JWT bearer token from node-B" 1>&2
-  echo $RESPONSE
-  exit 1
-fi
-
-# Offer bearer token to Node A
-RESPONSE=$(docker-compose exec nodeB curl -X POST --insecure -s -F "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer" -F "assertion=$(cat ./node-B/data/bearertoken.txt)" --cert /opt/nuts/certificate-and-key.pem --key /opt/nuts/certificate-and-key.pem https://nodeA:443/n2n/auth/v1/accesstoken)
+RESPONSE=$(echo $REQUEST | curl -X POST -s --data-binary @- http://localhost:21323/internal/auth/v1/request-access-token -H "Content-Type:application/json")
 if echo $RESPONSE | grep -q "access_token"; then
   echo $RESPONSE | sed -E 's/.*"access_token":"([^"]*).*/\1/' > ./node-B/data/accesstoken.txt
   echo "access token stored in ./node-B/data/accesstoken.txt"
